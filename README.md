@@ -1,135 +1,173 @@
-# Climate Risk Assessment and Stress Testing of ANZ Bank
+# ARIMA-GARCH Volatility Analysis of Coca-Cola & PepsiCo (2019–2024)
 
 ## Introduction
-This report examines the climate-related financial risk exposure of Australia and 
-New Zealand Banking Group (ANZ), analyzing how physical and transition climate 
-risks influence its portfolio performance, credit quality, and capital resilience. 
-Physical risks such as floods, bushfires, and sea-level rise threaten the value 
-of collateral and borrower repayment capacity across ANZ's housing and agribusiness 
-portfolios. Transition risks arising from carbon pricing, regulatory tightening, 
-and technological disruption create long-term financial implications for 
-carbon-intensive clients and investment exposures. Using Value-at-Risk (VaR) and 
-climate stress-testing methodologies, the report quantifies ANZ's potential losses 
-under both normal and disorderly transition scenarios, based on daily market data 
-from 2021 to 2024.
+This report extends the earlier Fama-French analysis of Coca-Cola (KO) and PepsiCo 
+(PEP) by focusing on the time-series properties and volatility dynamics of their 
+daily stock returns from 2019 to 2024. While the previous study confirmed weak-form 
+market efficiency and identified no abnormal returns, this analysis applies advanced 
+econometric modelling to capture short-run dependence and conditional volatility 
+patterns that simple factor regressions cannot fully explain. The analysis proceeds 
+in two stages — ARIMA modelling for mean return dynamics, followed by GARCH-family 
+models for volatility dynamics. Daily adjusted closing prices were obtained from 
+Investing.com and transformed into continuous logarithmic percentage returns.
 
 ---
 
 ## Research Objectives
-- Identify and categorize ANZ's physical and transition climate risk exposures
-- Review and compare quantitative risk methods: VaR, stress testing, ES, Climate VaR
-- Compute Value-at-Risk for ANZ's portfolio under normal market conditions
-- Measure ANZ's sensitivity to climate transition risk using the BMG factor regression
-- Simulate a disorderly climate transition stress scenario and quantify portfolio losses
-- Provide strategic recommendations for embedding climate risk into ANZ's risk framework
+- Model the mean return dynamics of KO and PEP using the Box-Jenkins ARIMA framework
+- Identify the best-fitting ARIMA specification using AIC, BIC, and Ljung-Box diagnostics
+- Test for volatility clustering and ARCH effects in both return series
+- Compare sGARCH(1,1), GJR-GARCH(1,1), and GARCH-M(1,1) volatility models
+- Determine whether risk premiums are embedded in daily returns via ARCH-in-mean term
+- Draw investment implications from the volatility and risk profiles of both stocks
 
 ---
 
 ## Tools & Methods
 | Tool | Purpose |
 |------|---------|
-| Excel VBA | VaR calculations, stress testing models, scenario dashboards |
-| Yahoo Finance | ANZ (ASX: ANZ), ASX 200, BMG Index daily data (2021–2024) |
-| Value-at-Risk (VaR) | Maximum expected loss under normal market conditions |
-| Climate Beta Regression | Sensitivity to Brown-minus-Green (BMG) transition factor |
-| Climate Stress Testing | Disorderly transition scenario simulation |
-| APRA / NGFS Frameworks | Regulatory alignment for climate scenario design |
+| R (RStudio) | All statistical modelling and diagnostics |
+| forecast | ARIMA model estimation and selection |
+| rugarch | GARCH-family model estimation |
+| tseries | Stationarity and ARCH effect testing |
+| PerformanceAnalytics | Return calculation and performance metrics |
+| ggplot2 | Data visualisation |
+| Investing.com | Daily adjusted closing price data (2019–2024) |
 
 ---
 
 ## Key Findings
 
-### 1. Physical & Transition Risk Exposure
-| Risk Type | Key Drivers | ANZ Exposure | Financial Impact |
+### 1. Time Series & Volatility Clustering
+
+Both KO and PEP returns fluctuate around zero with alternating calm and turbulent 
+periods, clearly showing **volatility clustering** — quiet periods are followed by 
+bursts of turbulence. This confirms time-varying risk in both series and signals 
+that standard constant-variance models are insufficient.
+
+![KO and PEP Daily Returns Time Series](time_series.png)
+*Figure 1: KO and PEP Daily Returns Time Series (2019–2024)*
+
+---
+
+### 2. ACF & PACF Correlograms
+
+ACF/PACF diagnostics revealed short-lag dependence typical of equity returns:
+- **KO:** ACF notable at lags 1–2, PACF exhibits early spikes → need for both 
+  AR and MA terms
+- **PEP:** ACF shows short-lag persistence, PACF strongest at lags 2–3
+
+![ACF and PACF Correlograms](acf_pacf.png)
+*Figure 2: Combined ACF and PACF Correlograms for KO and PEP*
+
+---
+
+### 3. ARIMA Modelling — Mean Return Dynamics
+
+Four ARIMA models were evaluated for each stock using AIC, BIC, and Ljung-Box 
+tests at lags 10 and 20 (p > 0.005 required for adequacy):
+
+#### Coca-Cola (KO) — ARIMA Results
+| Model | AIC | BIC | LB p(10) | LB p(20) | Adequate? | Decision |
+|---|---|---|---|---|---|---|
+| ARIMA(2,0,2) | 3387.792 | 3416.679 | 0.0349 | 0.1689 | ✅ Yes | **Selected** |
+| ARIMA(5,0,2) | 3391.419 | 3434.750 | 0.0369 | 0.2011 | ✅ Yes | Second-best |
+| ARIMA(4,0,3) | 3391.841 | 3435.172 | 0.0137 | 0.1916 | ✅ Yes | Second-best |
+| ARIMA(1,0,1) | 3397.592 | 3416.850 | 0.0026 | 0.0173 | ❌ No | Rejected |
+
+- **ARIMA(2,0,2) selected** — lowest AIC/BIC, passed all Ljung-Box diagnostics
+- ARIMA(1,0,1) rejected for residual autocorrelation at lag 10
+
+#### PepsiCo (PEP) — ARIMA Results
+| Model | AIC | BIC | LB p(10) | LB p(20) | Adequate? | Decision |
+|---|---|---|---|---|---|---|
+| ARIMA(5,0,2) | 3366.970 | 3410.301 | 0.0696 | 0.0886 | ✅ Yes | **Selected** |
+| ARIMA(4,0,3) | 3372.722 | 3416.053 | 0.0007 | 0.0104 | ❌ No | Rejected |
+| ARIMA(1,0,1) | 3378.012 | 3397.271 | 0.0037 | 0.0041 | ❌ No | Rejected |
+| ARIMA(2,0,2) | 3381.731 | 3410.618 | 0.0009 | 0.0016 | ❌ No | Rejected |
+
+- **ARIMA(5,0,2) selected** — only model passing all diagnostics, lowest AIC
+- All other models rejected for failing Ljung-Box residual adequacy checks
+
+---
+
+### 4. GARCH Modelling — Volatility Dynamics
+
+Three GARCH specifications were estimated for each stock, built on their respective 
+ARIMA mean models. Models compared using AIC, BIC, Ljung-Box, and ARCH LM tests:
+
+#### Coca-Cola (KO) — GARCH Results
+| Model | LogLik | AIC | BIC | LB(10) | LB(20) | ARCH LM p | Decision |
+|---|---|---|---|---|---|---|---|
+| sGARCH(1,1) — Norm | -1591.961 | 3.5191 | 3.5773 | 0.9773 | 1.0000 | 0.7859 | Adequate |
+| GJR-GARCH(1,1) | -1604.835 | 3.5496 | 3.6130 | 0.6851 | 1.0000 | 0.8245 | Adequate |
+| GARCH-M(1,1) — t | -1449.293 | 3.2103 | 3.2790 | 0.4999 | 0.9613 | 0.8872 | **Selected** |
+
+- **GARCH-M(1,1) with Student-t selected** — lowest AIC/BIC, passed all diagnostics
+- Captures fat tails and risk-return dynamics more effectively than standard GARCH
+
+#### PepsiCo (PEP) — GARCH Results
+| Model | LogLik | AIC | BIC | LB(10) | LB(20) | ARCH LM p | Decision |
+|---|---|---|---|---|---|---|---|
+| sGARCH(1,1) — Norm | -1554.491 | 3.4369 | 3.4950 | 0.9759 | 1.0000 | 0.9517 | Adequate |
+| GJR-GARCH(1,1) | -1553.800 | 3.4375 | 3.5010 | 0.9579 | 1.0000 | 0.9438 | Adequate |
+| GARCH-M(1,1) — t | -1420.172 | 3.1464 | 3.2151 | 0.8337 | 1.0000 | 0.7345 | **Selected** |
+
+- **GARCH-M(1,1) with Student-t selected** — best fit across all criteria
+- sGARCH and GJR-GARCH statistically adequate but less efficient
+
+![ACF of Squared Standardized Residuals](squared_residuals.png)
+*Figure 3: ACF of Squared Standardized Residuals for KO (left) and PEP (right)*
+
+---
+
+### 5. Summary of Final Models
+| Company | Best ARIMA | Best GARCH | Key Insight |
 |---|---|---|---|
-| Physical — Acute | Floods, cyclones, bushfires | Housing & agribusiness lending | Loan impairments, insurance dependency |
-| Physical — Chronic | Drought, sea-level rise | Coastal property & agricultural loans | Higher default probability, reduced collateral |
-| Transition — Policy | Carbon pricing, emission caps | Energy & manufacturing clients | Stranded assets, compliance costs |
-| Transition — Technology | Shift to renewables, EV adoption | Energy & transport lending | Revenue loss for legacy industries |
-| Transition — Reputation | ESG expectations, litigation | Institutional financing | Reputational loss, litigation costs |
+| Coca-Cola (KO) | ARIMA(2,0,2) | GARCH-M(1,1) — Student-t | Defensive, stable, lower volatility |
+| PepsiCo (PEP) | ARIMA(5,0,2) | GARCH-M(1,1) — Student-t | Higher risk, stronger risk premium sensitivity |
 
-### 2. Value-at-Risk (VaR) — Normal Market Conditions
-| Metric | Result |
-|---|---|
-| Daily Volatility (σ) | 1.1% |
-| 95% VaR | **A$18,150** |
-| 99% VaR | **A$25,630** |
-| Portfolio Value | A$1,000,000 (notional) |
-
-- Under normal conditions, ANZ has a **95% chance** daily losses stay below A$18,150
-- Only a **1% chance** of losing more than A$25,630 on any given day
-
-### 3. Climate Factor Sensitivity Regression
-| Factor | Coefficient | Interpretation |
-|---|---|---|
-| Market Beta (β_MKT) | 1.73 | ANZ moves 1.73x with the ASX 200 |
-| Climate Beta (β_CLIMATE) | -0.008 | Mild negative sensitivity to brown-asset declines |
-| R² | 0.65 | 65% of daily price changes explained by market and climate factors |
-
-- Negative climate beta confirms ANZ's stock **falls modestly** when brown sectors underperform
-- Suggests **mild vulnerability** to climate-policy shocks but not high systemic risk
-
-### 4. Climate Stress Testing — Disorderly Transition Scenario
-| Scenario Assumption | Shock Applied |
-|---|---|
-| ASX 200 | -10% |
-| Brown Index | -25% |
-| Green Index | +10% |
-| Brown-Green Combined Shock | -35% |
-
-**Combined Portfolio Impact:**
-- Market Impact = 1.73 × (-0.10) = **-17.3%**
-- Climate Impact = -0.008 × (-0.35) = **+0.3%**
-- Combined Impact = **-17.1%** → Estimated Loss = **A$170,593**
-
-### 5. Comparing Normal vs Climate Stress Results
-| Metric | Loss (A$) |
-|---|---|
-| 95% VaR | A$18,150 |
-| 99% VaR | A$25,630 |
-| Climate Stress Loss | **A$170,593** |
-
-- Climate stress loss is **9 times larger** than the 99% VaR
-- Confirms that **standard VaR alone cannot capture extreme climate transition events**
-- Climate transition risk is a **tail event** beyond normal statistical loss ranges
+- Both stocks show **volatility clustering** but **limited leverage asymmetry**
+- The **ARCH-in-mean term** confirms risk premiums are embedded in daily returns
+- **Student-t distribution** effectively captures fat-tailed equity return behavior
+- No strong evidence of **leverage effects** in either stock
 
 ---
 
 ## Conclusion
-The report concludes that climate change presents a **material financial threat** to ANZ. 
-Stress-test results reveal potential losses nearly nine times greater than those predicted 
-under standard market VaR models, underscoring the limitations of conventional risk 
-metrics in capturing extreme transition shocks.
+Both KO and PEP operate in efficient markets with no exploitable abnormal returns, 
+consistent with the earlier Fama-French findings. The ARIMA analysis confirmed 
+short-term dependence but no long-run predictability in either stock. The 
+GARCH-M(1,1) with Student-t innovations provided the best fit for both companies, 
+capturing volatility clustering, fat tails, and a direct risk-return trade-off.
 
-To strengthen resilience, ANZ must embed climate risk assessment into its governance, 
-capital planning, and portfolio management frameworks. Incorporating **Climate VaR 
-metrics**, conducting regular stress tests aligned with APRA and NGFS expectations, 
-and enhancing real-time monitoring through **Key Risk Indicators (KRIs)** will improve 
-early detection of climate-sensitive exposures. By integrating climate considerations 
-into strategic decision-making and disclosure, ANZ can mitigate downside risks while 
-positioning itself as a leader in sustainable and climate-aligned banking.
+Coca-Cola emerges as the more **defensive, stable asset** — lower volatility 
+persistence and steadier return dynamics make it an ideal core holding for 
+risk-averse investors. PepsiCo carries **higher volatility and stronger sensitivity 
+to risk premiums**, aligning with its more cyclical exposure profile and making it 
+a more tactical opportunity for value-oriented strategies within consumer staples.
 
 ---
 
 ## Recommendations
-- **Governance:** Establish a dedicated Climate Risk Committee aligned with TCFD standards
-- **Portfolio:** Reduce exposure to high-emission borrowers; increase sustainable finance
-- **Monitoring:** Adopt KRIs linked to carbon exposure, sectoral sensitivity, and borrower 
-  transition progress
-- **Hedging:** Use green-bond futures or ESG derivatives to offset transition shocks
-- **Reporting:** Strengthen data partnerships and transparency to meet evolving regulatory 
-  expectations under APRA and NGFS
+- **Conservative investors** seeking defensive exposure should prefer Coca-Cola
+- **Value-oriented investors** seeking tactical opportunities may consider PepsiCo
+- **Risk managers** should monitor conditional variance forecasts as clustering 
+  effects imply rapid shifts in risk exposure
+- **GARCH-M with Student-t** is recommended as the preferred specification for 
+  ongoing volatility monitoring and portfolio stress testing
+- **Future research** should extend to intraday data or macroeconomic linkages 
+  for deeper forecasting insights
 
 ---
 
 ## Files in this Repository
 | File | Description |
 |---|---|
-| Dhruthi_SRM2.pdf | Full climate risk research report |
-| Dhruthi_StressTest_VaR_Excel.xlsx | Excel VBA stress testing model |
+| FE_Assignment_2_s4103956.pdf | Full research report |
 
 ---
 
 **Institution:** RMIT University — Master of Finance
-**Course:** Sustainable Financial Risk Management (BAFI3294)
-**Submitted:** October 2025
+**Course:** Financial Econometrics (ECON1195)
+**Submitted:** September 2025
