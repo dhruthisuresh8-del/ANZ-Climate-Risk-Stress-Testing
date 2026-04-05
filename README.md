@@ -45,8 +45,6 @@ periods, clearly showing **volatility clustering** — quiet periods are followe
 bursts of turbulence. This confirms time-varying risk in both series and signals 
 that standard constant-variance models are insufficient.
 
-![KO and PEP Daily Returns Time Series](time_series.png)
-*Figure 1: KO and PEP Daily Returns Time Series (2019–2024)*
 
 ---
 
@@ -57,8 +55,6 @@ ACF/PACF diagnostics revealed short-lag dependence typical of equity returns:
   AR and MA terms
 - **PEP:** ACF shows short-lag persistence, PACF strongest at lags 2–3
 
-![ACF and PACF Correlograms](acf_pacf.png)
-*Figure 2: Combined ACF and PACF Correlograms for KO and PEP*
 
 ---
 
@@ -116,8 +112,6 @@ ARIMA mean models. Models compared using AIC, BIC, Ljung-Box, and ARCH LM tests:
 - **GARCH-M(1,1) with Student-t selected** — best fit across all criteria
 - sGARCH and GJR-GARCH statistically adequate but less efficient
 
-![ACF of Squared Standardized Residuals](squared_residuals.png)
-*Figure 3: ACF of Squared Standardized Residuals for KO (left) and PEP (right)*
 
 ---
 
